@@ -1,0 +1,83 @@
+#include <cctype>
+#include <cstddef>
+#include <iostream>
+#include <string>
+#include <vector>
+
+using matrix_t = std::vector<std::vector<char>>;
+
+struct coordinate_t
+{
+	int x, y;
+
+	coordinate_t operator+(const coordinate_t& b) const {return {x + b.x, y + b.y};}
+	bool within(size_t w, size_t h) 
+	{
+		if(x < 0 or y < 0)
+			return false;
+
+		if(x >= w or y >= h)
+			return false;
+		return true;
+	}
+};
+
+static const std::vector<coordinate_t> checks = {{-1, 0}, {-1, -1}, {0, -1}, {+1, -1}, {+1, 0}, {+1, +1}, {0, +1}, {-1, +1}};
+
+/**
+ * Converts a number given a position within
+ */
+static unsigned parse(const matrix_t& m, size_t x, size_t y)
+{
+	std::string n;
+	long start_x = x;
+	long stop_x = x;
+
+	while(start_x >= 0 and std::isdigit(m[y][start_x]))
+		--start_x;
+
+	while(stop_x < m[y].size() and std::isdigit(m[y][stop_x]))
+		--stop_x;
+
+	for(long x = start_x; x <= stop_x; ++x)
+		n.push_back(m[y][x]);
+
+	return std::stoi(n);
+}
+
+int main()
+{
+	matrix_t m;
+	std::string line;
+	unsigned long long score = 0;
+
+	while(std::getline(std::cin, line))
+	{
+		std::vector<char> lc;
+		for(char c : line)
+			lc.push_back(c);
+
+		m.push_back(std::move(lc));
+	}
+
+	for(size_t y = 0; y < m.size(); ++y)
+		for(size_t x = 0; x < m[y].size(); ++x)
+		{
+			if(std::isdigit(m[y][x]) or m[y][x] == '.')
+				continue;
+
+			coordinate_t centrum = {static_cast<int>(x), static_cast<int>(y)};
+			for(auto off : checks)
+			{
+				auto c = centrum + off;
+				if(not c.within(m[y].size(), m.size()))
+					continue;
+
+				if(std::isdigit(m[c.y][c.x]))
+					score += parse(m, c.x, c.y);
+			}
+		}
+	
+	std::cout << score << std::endl;
+	
+}
