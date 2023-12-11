@@ -57,7 +57,7 @@ struct ObservedUniverse
 
 	auto distance(uint16_t s1, uint16_t s2) const {return stars.at(s1).norm_manhattan(stars.at(s2));}
 
-	void expand(unsigned expansion = 1)
+	void expand(unsigned long expansion = 1)
 	{
 		std::vector<size_t> empty_rows;
 		for(size_t y = 0; y < heigth(); ++y)
@@ -76,36 +76,18 @@ struct ObservedUniverse
 				empty_cols.push_back(x);
 		}
 
-		// Expand rows
-		size_t curr_off_r = 0;
-		std::vector<uint16_t> empty;
-		for(size_t x = 0; x < width(); ++x)
-			empty.push_back(VOID);
-
-		for(const auto row_index : empty_rows)
-		{
-			size_t i = row_index + curr_off_r;
-			for(size_t j = 0; j < expansion; ++j)
-				space.insert(space.begin() + i, empty);
-
-			curr_off_r += expansion;
-		}
-
-		// Expand cols
-		size_t curr_off_c = 0;
-		for(const auto col_index : empty_cols)
-		{
-			size_t i = col_index + curr_off_c;
-			for(size_t j = 0; j < expansion; ++j)
-			{
-				for(auto& row : space)
-					row.insert(row.begin() + i, VOID);
-			}
-
-			curr_off_c += expansion;
-		}
-
+		// reset stars in their original pos
 		update_stars_pos();
+
+		// translate their coordinates
+		for(auto& [star_index, star_coords] : stars)
+		{
+			auto n_cols = expansion * std::count_if(empty_cols.begin(), empty_cols.end(), [star_coords](auto x){return x < star_coords.x;});
+			auto n_rows = expansion * std::count_if(empty_rows.begin(), empty_rows.end(), [star_coords](auto y){return y < star_coords.y;});
+
+			star_coords.x += n_cols;
+			star_coords.y += n_rows;
+		}
 	}
 };
 
@@ -119,7 +101,7 @@ int main()
 		uni.add_row_of_space(line);
 	}
 
-	uni.expand(1'000'000);
+	uni.expand();
 
 	size_t sum = 0;
 	for(auto it_a = uni.stars.begin(); std::next(it_a) != uni.stars.end(); ++it_a)
@@ -129,7 +111,17 @@ int main()
 			//std::cout << it_a->first << ' ' << it_a->second << '\t' << it_b->first << ' ' << it_b->second <<'\t' << uni.distance(it_a->first, it_b->first) << '\n';
 	}
 
-	std::cout << sum << '\n';
+	uni.expand(1'000'000 - 1); // IDK WHY LOL
+
+	size_t sum2 = 0;
+	for(auto it_a = uni.stars.begin(); std::next(it_a) != uni.stars.end(); ++it_a)
+	{
+		for(auto it_b = std::next(it_a); it_b != uni.stars.end(); ++it_b)
+			sum2 += uni.distance(it_a->first, it_b->first);
+			//std::cout << it_a->first << ' ' << it_a->second << '\t' << it_b->first << ' ' << it_b->second <<'\t' << uni.distance(it_a->first, it_b->first) << '\n';
+	}
+
+	std::cout << sum << '\t' << sum2 << '\n';
 
 	return 0;
 }
